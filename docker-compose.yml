@@ -1,0 +1,15 @@
+version: '2'
+
+networks:
+  nats:
+    driver: bridge
+
+services:
+  nats:
+    image: bitnami/nats:2.2.2-debian-10-r4
+    ports:
+      - 4222:4222
+      - 6222:6222
+      - 8222:8222
+    networks:
+      - nats
