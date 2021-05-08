@@ -25,42 +25,47 @@ func printMsg(m *nats.Msg, i int) {
 	log.Printf("[#%d] Received on [%s]: '%s'", i, m.Subject, string(m.Data))
 }
 
-func subscriber() *nats.Conn {
-	var urls = nats.DefaultURL
-	opts := []nats.Option{nats.Name("NATS Sample Subscriber")}
-	opts = setupConnOptions(opts)
+func subscriber() <-chan *nats.Conn {
+	ncChan := make(chan *nats.Conn, 1)
 
-	// Connect to NATS
-	nc, err := nats.Connect(urls, opts...)
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
+	go func(c chan *nats.Conn) {
+		defer close(c)
+		var urls = nats.DefaultURL
+		opts := []nats.Option{nats.Name("NATS Sample Subscriber")}
+		opts = setupConnOptions(opts)
 
-	i := 0
+		// Connect to NATS
+		nc, err := nats.Connect(urls, opts...)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
 
-	_, err = nc.Subscribe(subj, func(msg *nats.Msg) {
-		i += 1
-		printMsg(msg, i)
-	})
-	if err != nil {
-		logrus.Error("error subscribe: ", err)
-		return nil
-	}
-	err = nc.Flush()
-	if err != nil {
-		logrus.Error("error flushing: ", err)
-		return nil
-	}
+		i := 0
 
-	if err := nc.LastError(); err != nil {
-		log.Fatal(err)
-		return nil
-	}
+		_, err = nc.Subscribe(subj, func(msg *nats.Msg) {
+			i += 1
+			printMsg(msg, i)
+		})
+		if err != nil {
+			logrus.Error("error subscribe: ", err)
+			return
+		}
+		err = nc.Flush()
+		if err != nil {
+			logrus.Error("error flushing: ", err)
+			return
+		}
 
-	log.Printf("Listening on [%s]", subj)
+		if err := nc.LastError(); err != nil {
+			log.Fatal(err)
+			return
+		}
 
-	return nc
+		log.Printf("Listening on [%s]", subj)
+		c <- nc
+	}(ncChan)
+	return ncChan
 }
 
 func setupConnOptions(opts []nats.Option) []nats.Option {
