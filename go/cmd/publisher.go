@@ -6,41 +6,21 @@ import (
 	"log"
 )
 
-func publisher() <-chan *nats.Conn {
-	ncChan := make(chan *nats.Conn)
-
-	go func(c chan *nats.Conn) {
-		defer close(c)
-
-		nc, err := nats.Connect(nats.DefaultURL)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-
-		i := 0
-		msg := []byte("Hello")
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		i += 1
-		publish(i, nc, subj, msg)
-		c <- nc
-	}(ncChan)
-	return ncChan
+func publisher() {
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	defer nc.Close()
+	// publish
+	count := 0
+	loop := 10
+	msg := []byte("Hello")
+	for i := 0; i < loop; i++ {
+		count += 1
+		publish(count, nc, subj, msg)
+	}
 }
 
 func publish(i int, nc *nats.Conn, subj string, msg []byte) {

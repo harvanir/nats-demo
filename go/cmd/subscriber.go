@@ -25,11 +25,12 @@ func printMsg(m *nats.Msg, i int) {
 	log.Printf("[#%d] Received on [%s]: '%s'", i, m.Subject, string(m.Data))
 }
 
-func subscriber() <-chan *nats.Conn {
+//func subscriber(in chan string) <-chan *nats.Conn {
+func subscriber() chan *nats.Conn {
 	ncChan := make(chan *nats.Conn, 1)
 
-	go func(c chan *nats.Conn) {
-		defer close(c)
+	go func() {
+		//defer close(c)
 		var urls = nats.DefaultURL
 		opts := []nats.Option{nats.Name("NATS Sample Subscriber")}
 		opts = setupConnOptions(opts)
@@ -45,7 +46,10 @@ func subscriber() <-chan *nats.Conn {
 
 		_, err = nc.Subscribe(subj, func(msg *nats.Msg) {
 			i += 1
-			printMsg(msg, i)
+			go func(ii int) {
+				time.Sleep(time.Second * 1)
+				printMsg(msg, ii)
+			}(i)
 		})
 		if err != nil {
 			logrus.Error("error subscribe: ", err)
@@ -63,8 +67,8 @@ func subscriber() <-chan *nats.Conn {
 		}
 
 		log.Printf("Listening on [%s]", subj)
-		c <- nc
-	}(ncChan)
+		ncChan <- nc
+	}()
 	return ncChan
 }
 
@@ -75,7 +79,7 @@ func setupConnOptions(opts []nats.Option) []nats.Option {
 	opts = append(opts, nats.ReconnectWait(reconnectDelay))
 	opts = append(opts, nats.MaxReconnects(int(totalWait/reconnectDelay)))
 	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-		log.Printf("Disconnected due to: error(%s), will attempt reconnects for %.0fm", err, totalWait.Minutes())
+		log.Printf("Disconnected due to: error(%v), will attempt reconnects for %.0fm", err, totalWait.Minutes())
 	}))
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
 		log.Printf("Reconnected [%s]", nc.ConnectedUrl())
