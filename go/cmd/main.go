@@ -9,19 +9,16 @@ const subj = "foo"
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
-	chanConn := subscriber()
+	chanBool, closeFunc := subscriber()
 
 	select {
-	case conSub, ok := <-chanConn:
+	case boolVal, ok := <-chanBool:
 		log.Printf("ok: %v", ok)
 		publisher()
 		time.Sleep(time.Second * 4)
 		if ok {
-			defer func() {
-				log.Printf("closing chanConn...")
-				conSub.Close()
-				close(chanConn)
-			}()
+			log.Printf("chan value: %v", boolVal)
+			defer closeFunc()
 		}
 	}
 }

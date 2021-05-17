@@ -26,8 +26,9 @@ func printMsg(m *nats.Msg, i int) {
 }
 
 //func subscriber(in chan string) <-chan *nats.Conn {
-func subscriber() chan *nats.Conn {
-	ncChan := make(chan *nats.Conn, 1)
+func subscriber() (chan bool, func()) {
+	ncChan := make(chan bool, 1)
+	var closeFunc func()
 
 	go func() {
 		//defer close(c)
@@ -67,9 +68,17 @@ func subscriber() chan *nats.Conn {
 		}
 
 		log.Printf("Listening on [%s]", subj)
-		ncChan <- nc
+		closeFunc = func() {
+			logrus.Info("close function start...")
+			nc.Close()
+			logrus.Info("close function end...")
+		}
+		ncChan <- true
 	}()
-	return ncChan
+	return ncChan, func() {
+		closeFunc()
+		close(ncChan)
+	}
 }
 
 func setupConnOptions(opts []nats.Option) []nats.Option {
