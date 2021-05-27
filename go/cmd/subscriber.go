@@ -15,14 +15,13 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"log"
 	"time"
 
 	"github.com/nats-io/nats.go"
 )
 
 func printMsg(m *nats.Msg, i int) {
-	log.Printf("[#%d] Received on [%s]: '%s'", i, m.Subject, string(m.Data))
+	logrus.Infof("[#%d] Received on [%s]: '%s'", i, m.Subject, string(m.Data))
 }
 
 //func subscriber(in chan string) <-chan *nats.Conn {
@@ -39,7 +38,7 @@ func subscriber() (chan bool, func()) {
 		// Connect to NATS
 		nc, err := nats.Connect(urls, opts...)
 		if err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 			return
 		}
 
@@ -63,11 +62,11 @@ func subscriber() (chan bool, func()) {
 		}
 
 		if err := nc.LastError(); err != nil {
-			log.Fatal(err)
+			logrus.Fatal(err)
 			return
 		}
 
-		log.Printf("Listening on [%s]", subj)
+		logrus.Infof("Listening on [%s]", subj)
 		closeFunc = func() {
 			logrus.Info("close function start...")
 			nc.Close()
@@ -88,13 +87,13 @@ func setupConnOptions(opts []nats.Option) []nats.Option {
 	opts = append(opts, nats.ReconnectWait(reconnectDelay))
 	opts = append(opts, nats.MaxReconnects(int(totalWait/reconnectDelay)))
 	opts = append(opts, nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-		log.Printf("Disconnected due to: error(%v), will attempt reconnects for %.0fm", err, totalWait.Minutes())
+		logrus.Infof("Disconnected due to: error(%v), will attempt reconnects for %.0fm", err, totalWait.Minutes())
 	}))
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
-		log.Printf("Reconnected [%s]", nc.ConnectedUrl())
+		logrus.Infof("Reconnected [%s]", nc.ConnectedUrl())
 	}))
 	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
-		log.Fatalf("Exiting with last error: %v", nc.LastError())
+		logrus.Fatalf("Exiting with last error: %v", nc.LastError())
 	}))
 	return opts
 }

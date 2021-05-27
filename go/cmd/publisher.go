@@ -3,13 +3,12 @@ package main
 import (
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
-	"log"
 )
 
 func publisher() {
 	nc, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 		return
 	}
 	defer nc.Close()
@@ -29,7 +28,7 @@ func publish(i int, nc *nats.Conn, subj string, msg []byte) {
 		logrus.Error("error publishing: ", err)
 		return
 	}
-	log.Printf("[#%d] Publishing [%s] : '%s'\n", i, subj, msg)
+	logrus.Infof("[#%d] Publishing [%s] : '%s'\n", i, subj, msg)
 	err = nc.Flush()
 	if err != nil {
 		logrus.Error("error flushing: ", err)
@@ -37,8 +36,8 @@ func publish(i int, nc *nats.Conn, subj string, msg []byte) {
 	}
 
 	if err := nc.LastError(); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	} else {
-		log.Printf("[#%d] Published [%s] : '%s'\n", i, subj, msg)
+		logrus.Infof("[#%d] Published [%s] : '%s'\n", i, subj, msg)
 	}
 }
